@@ -119,3 +119,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->get('login-logs', [LoginLogController::class, 'index'])
         ->name('loginlogs.index');
 });
+
+
+Route::middleware('role:admin')->group(function () {
+    Route::resource('tags', TagController::class);
+});
