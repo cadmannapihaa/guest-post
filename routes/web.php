@@ -118,6 +118,18 @@ Route::middleware('auth')->group(function () {
     */
     Route::middleware('role:admin')->get('login-logs', [LoginLogController::class, 'index'])
         ->name('loginlogs.index');
+
+
+    //-------------------------------------
+    Route::get('notifications', [NotificationController::class, 'index'])
+        ->name('notifications.index');
+
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead'])
+        ->name('notifications.markRead');
+
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])
+        ->name('notifications.markAllRead');
+
 });
 
 
