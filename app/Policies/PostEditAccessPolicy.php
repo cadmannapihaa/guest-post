@@ -5,6 +5,9 @@ namespace App\Policies;
 use App\Models\User;
 use App\Models\PostEditAccess;
 
+//& Post edit policy
+
+
 class PostEditAccessPolicy
 {
     public function grant(User $user): bool

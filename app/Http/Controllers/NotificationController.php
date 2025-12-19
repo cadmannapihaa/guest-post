@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\UserNotification;
 use Illuminate\Http\Request;
 
+//& Notification controller 
+
 class NotificationController extends Controller
 {
     public function index(Request $request)
