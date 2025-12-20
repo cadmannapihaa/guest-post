@@ -13,6 +13,9 @@ use App\Models\PostEditAccess;
 use App\Policies\PostEditAccessPolicy;
 use App\Models\UserNotification;
 use App\Policies\UserNotificationPolicy;
+use Illuminate\Support\Facades\Gate;
+use App\Models\AuthorizationLog;
+
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -23,4 +26,20 @@ class AuthServiceProvider extends ServiceProvider
         PostEditAccess::class => PostEditAccessPolicy::class,
         UserNotification::class => UserNotificationPolicy::class, // optional
     ];
+
+    public function boot()
+    {
+        $this->registerPolicies();
+
+        Gate::after(function ($user, $ability, $result, $arguments) {
+            AuthorizationLog::create([
+                'user_id' => $user?->id,
+                'ability' => $ability,
+                'resource_type' => $arguments[0] ?? null,
+                'resource_id' => $arguments[0]->id ?? null,
+                'allowed' => (bool) $result,
+                'reason' => $result ? null : 'Policy denied',
+            ]);
+        });
+    }
 }

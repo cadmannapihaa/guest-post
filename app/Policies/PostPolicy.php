@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Models\PostEditAccess;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use App\Services\AuthorizationService;
 
 class PostPolicy
 {
@@ -34,33 +35,37 @@ class PostPolicy
         return $user->can('create posts');
     }
 
-    public function update(User $user, Post $post): bool
+        public function update(User $user, Post $post): bool
     {
-        // Super permission to edit any
+        // 0. Explicit deny rule (ABAC)
+        if (AuthorizationService::isDenied($user, 'post.edit', Post::class, $post->id)) {
+            return false;
+        }
+
+        // 1. Subscription expired
+        if (!$user->subscriptionPackage || $user->subscription_expires_at < now()) {
+            return false;
+        }
+
+        // 2. Subscription feature
+        if (!AuthorizationService::subscriptionAllows($user, 'can_publish')) {
+            return false;
+        }
+
+        // 3. RBAC
         if ($user->can('edit any post')) {
             return true;
         }
 
-        // Permission + owner (own post)
-        if ($user->id === $post->user_id && $user->can('edit own post')) {
+        if ($post->user_id === $user->id && $user->can('edit own post')) {
             return true;
         }
 
-        // Time-limited grant (ABAC)
-        $grant = PostEditAccess::where('user_id', $user->id)
-            ->where('post_id', $post->id)
-            ->where('is_active', true)
-            ->where(function ($q) {
-                $q->whereNull('expires_at')
-                  ->orWhere('expires_at', '>', now());
-            })
+        // 4. Time-bound ABAC grant
+        return $post->editAccess()
+            ->active()
+            ->where('user_id', $user->id)
             ->exists();
-
-        if ($grant && $user->can('edit granted post')) {
-            return true;
-        }
-
-        return false;
     }
 
     public function delete(User $user, Post $post): bool
